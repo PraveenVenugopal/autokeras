@@ -69,11 +69,14 @@ class Grid_Searcher(Searcher):
 
     def search_space_exhausted(self):
         """ Check if Grid search has exhausted the search space """
+        if self.search_space_counter == len(self.search_dimensions):
+            return True
+        return False
 
-        for i in range(len(self.search_space)):
-            if self.search_dimensions[0][i] != self.search_dimensions[1][i]:
-                return False
-        return True
+        # for i in range(len(self.search_space)):
+        #     if self.search_dimensions[0][i] != self.search_dimensions[1][i]:
+        #         return False
+        # return True
 
     def search(self, train_data, test_data, timeout=60 * 60 * 24):
         """Run the search loop of training, generating and updating once.
@@ -89,61 +92,10 @@ class Grid_Searcher(Searcher):
             test_data: An instance of Dataloader.
             timeout: An integer, time limit in seconds.
         """
-
-        start_time = time.time()
-        torch.cuda.empty_cache()
-        if not self.history:
-            self.init_search()
-
         if self.search_space_exhausted():
             return
-        # Start the new process for training.
-        graph, other_info, model_id = self.training_queue.pop(0)
-        if self.verbose:
-            print('\n')
-            print('+' + '-' * 46 + '+')
-            print('|' + 'Training model {}'.format(model_id).center(46) + '|')
-            print('+' + '-' * 46 + '+')
-        # Temporary solution to support GOOGLE Colab
-        if get_system() == Constant.SYS_GOOGLE_COLAB:
-            ctx = mp.get_context('fork')
         else:
-            ctx = mp.get_context('spawn')
-        q = ctx.Queue()
-        p = ctx.Process(target=train, args=(q, graph, train_data, test_data, self.trainer_args,
-                                            self.metric, self.loss, self.verbose, self.path))
-        try:
-            p.start()
-            # Do the search in current thread.
-            searched = False
-            generated_graph = None
-            generated_other_info = None
-            if not self.training_queue:
-                searched = True
-                remaining_time = timeout - (time.time() - start_time)
-                generated_other_info, generated_graph = self.generate(remaining_time, q)
-                new_model_id = self.model_count
-                self.model_count += 1
-                self.training_queue.append((generated_graph, generated_other_info, new_model_id))
-                self.descriptors.append(generated_graph.extract_descriptor())
-
-            remaining_time = timeout - (time.time() - start_time)
-            if remaining_time <= 0:
-                raise TimeoutError
-            metric_value, loss, graph = q.get(timeout=remaining_time)
-
-            if self.verbose and searched:
-                verbose_print(generated_other_info, generated_graph, new_model_id)
-
-            if metric_value is not None:
-                self.add_model(metric_value, loss, graph, model_id)
-
-        except (TimeoutError, queue.Empty) as e:
-            raise TimeoutError from e
-        finally:
-            # terminate and join the subprocess to prevent any resource leak
-            p.terminate()
-            p.join()
+            super().search(train_data, test_data, timeout)
 
     def generate(self, remaining_time, multiprocessing_queue):
         """Generate the next neural architecture.
