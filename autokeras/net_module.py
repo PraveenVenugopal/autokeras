@@ -7,8 +7,7 @@ import os
 import time
 
 from autokeras.constant import Constant
-from autokeras.grid_search import Grid_Searcher #, train
-from autokeras.search import Searcher, train
+from autokeras.search import BayesianSearcher, train
 
 from autokeras.utils import pickle_to_file, rand_temp_folder_generator, ensure_dir
 from autokeras.nn.generator import CnnGenerator, MlpGenerator, ResNetGenerator, DenseNetGenerator
@@ -28,7 +27,8 @@ class NetworkModule:
         search_type: A constant denoting the type of hyperparameter search algorithm that must be used.
     """
 
-    def __init__(self, loss, metric, searcher_args=None, path=None, verbose=False, search_type=Constant.BAYESIAN_SEARCH):
+
+    def __init__(self, loss, metric, searcher_args=None, path=None, verbose=False, search_type=BayesianSearcher):
         self.searcher_args = searcher_args if searcher_args is not None else {}
         self.searcher = None
         self.path = path if path is not None else rand_temp_folder_generator()
@@ -64,12 +64,7 @@ class NetworkModule:
             self.searcher_args['generators'] = self.generators
             self.searcher_args['verbose'] = self.verbose
             pickle_to_file(self, os.path.join(self.path, 'module'))
-            if self.search_type == Constant.GRID_SEARCH:
-                self.searcher = Grid_Searcher(**self.searcher_args)
-            else:
-                if 'search_space' in list(self.searcher_args.keys()):
-                    del self.searcher_args['search_space']
-                self.searcher = Searcher(**self.searcher_args)
+            self.searcher = self.search_type(**self.searcher_args)
 
         start_time = time.time()
         time_remain = time_limit
@@ -132,9 +127,9 @@ class NetworkModule:
 
 class CnnModule(NetworkModule):
     """ Class to create a CNN module."""
-
-    def __init__(self, loss, metric, searcher_args=None, path=None, verbose=False, search_type=Constant.BAYESIAN_SEARCH):
-        super(CnnModule, self).__init__(loss, metric, searcher_args, path, verbose,search_type)
+    def __init__(self, loss, metric, searcher_args=None, path=None, verbose=False,
+                 search_type=BayesianSearcher):
+        super(CnnModule, self).__init__(loss, metric, searcher_args, path, verbose, search_type)
         self.generators.append(CnnGenerator)
         self.generators.append(ResNetGenerator)
         self.generators.append(DenseNetGenerator)

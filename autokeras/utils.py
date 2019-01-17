@@ -7,13 +7,10 @@ import zipfile
 import logging
 import itertools
 
-
-import warnings
 import imageio
 import numpy as np
 import requests
 import torch
-import subprocess
 import string
 import random
 from autokeras.constant import Constant
@@ -52,39 +49,48 @@ def pickle_to_file(obj, path):
     pickle.dump(obj, open(path, 'wb'))
 
 
-# TODO cannot detect nvidia-smi in Windows normally. We need a fall back for windows
 def get_device():
     """ If CUDA is available, use CUDA device, else use CPU device.
-    When choosing from CUDA devices, this function will choose the one with max memory available.
-    Returns: string device name.
+    Returns: string device name
     """
-    # TODO: could use gputil in the future
-    device = 'cpu'
-    if torch.cuda.is_available():
-        try:
-            # smi_out=
-            #       Free                 : xxxxxx MiB
-            #       Free                 : xxxxxx MiB
-            #                      ....
-            smi_out = subprocess.check_output('nvidia-smi -q -d Memory | grep -A4 GPU|grep Free', shell=True)
-            if isinstance(smi_out, bytes):
-                smi_out = smi_out.decode('utf-8')
-        except subprocess.SubprocessError:
-            warnings.warn('Cuda device successfully detected. However, nvidia-smi cannot be invoked')
-            return 'cpu'
-        visible_devices = os.getenv('CUDA_VISIBLE_DEVICES', '').split(',')
-        if len(visible_devices) == 1 and visible_devices[0] == '':
-            visible_devices = []
-        visible_devices = [int(x) for x in visible_devices]
-        memory_available = [int(x.split()[2]) for x in smi_out.splitlines()]
-        for cuda_index, _ in enumerate(memory_available):
-            if cuda_index not in visible_devices and visible_devices:
-                memory_available[cuda_index] = 0
+    return 'cuda' if torch.cuda.is_available() else 'cpu'
 
-        if memory_available:
-            if max(memory_available) != 0:
-                device = 'cuda:' + str(memory_available.index(max(memory_available)))
-    return device
+
+# # TODO cannot detect nvidia-smi in Windows normally. We need a fall back for windows
+# def get_device():
+#     """ If CUDA is available, use CUDA device, else use CPU device.
+#     When choosing from CUDA devices, this function will choose the one with max memory available.
+#     Returns: string device name.
+#     """
+#     # TODO: could use gputil in the future
+#     device = 'cpu'
+#     if torch.cuda.is_available():
+#         try:
+#             # smi_out=
+#             #       Free                 : xxxxxx MiB
+#             #       Free                 : xxxxxx MiB
+#             #                      ....
+#             smi_out = subprocess.check_output('nvidia-smi -q -d Memory | grep -A4 GPU|grep Free', shell=True)
+#             if isinstance(smi_out, bytes):
+#                 smi_out = smi_out.decode('utf-8')
+#         except subprocess.SubprocessError:
+#             warnings.warn('Cuda device successfully detected. However, nvidia-smi cannot be invoked')
+#             return 'cpu'
+#         visible_devices = os.getenv('CUDA_VISIBLE_DEVICES', '').split(',')
+#         if len(visible_devices) == 1 and visible_devices[0] == '':
+#             visible_devices = []
+#         visible_devices = [int(x) for x in visible_devices]
+#         memory_available = [int(x.split()[2]) for x in smi_out.splitlines()]
+#         for cuda_index, _ in enumerate(memory_available):
+#             if cuda_index not in visible_devices and visible_devices:
+#                 memory_available[cuda_index] = 0
+#         memory_available = list(filter(lambda a: a != 2, memory_available))
+#         if memory_available:
+#             if max(memory_available) != 0 and torch.cuda.device_count() == 1:
+#                 device = 'cuda:' + str(memory_available.index(max(memory_available)))
+#             elif max(memory_available) != 0 and torch.cuda.device_count() > 1:
+#                 device = 'cuda:0'
+#     return device
 
 
 def temp_path_generator():
@@ -125,6 +131,14 @@ def download_file(file_link, file_path):
                     sys.stdout.flush()
 
 
+def download_model(model_link, model_file_name):
+    temp_path = temp_path_generator()
+    ensure_dir(temp_path)
+    model_path = f'{temp_path}/{model_file_name}'
+    download_file(model_link, model_path)
+    return model_path
+
+
 def download_file_with_extract(file_link, file_path, extract_path):
     """Download the file specified in `file_link`, save to `file_path` and extract to the directory `extract_path`."""
     if not os.path.exists(extract_path):
@@ -160,10 +174,8 @@ def assert_search_space(search_space):
         value_list.append(grid[key])
 
     dimension = list(itertools.product(*value_list))
-    #print(dimension)
+    # print(dimension)
     return grid, dimension
-
-
 
 def verbose_print(new_father_id, new_graph, new_model_id):
     """Print information about the operation performed on father model to obtain current model and father's id."""

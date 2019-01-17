@@ -182,7 +182,8 @@ class ImageDataTransformer(DataTransformer):
         self.std = np.std(data, axis=(0, 1, 2), keepdims=True).flatten()
         if augment is None:
             self.augment = Constant.DATA_AUGMENTATION
-        self.augment = augment
+        else:
+            self.augment = augment
 
     def transform_train(self, data, targets=None, batch_size=None):
         """ Transform the training data, perform random cropping data augmentation and basic random flip augmentation.
@@ -262,13 +263,13 @@ class ImageDataTransformer(DataTransformer):
 class DataTransformerMlp(DataTransformer):
     def __init__(self, data):
         super().__init__()
-        self.max_val = data.max()
-        data = data / self.max_val
-        self.mean = np.mean(data, axis=0, keepdims=True).flatten()
-        self.std = np.std(data, axis=0, keepdims=True).flatten()
+        self.mean = np.mean(data, axis=0)
+        self.std = np.std(data, axis=0)
 
     def transform_train(self, data, targets=None, batch_size=None):
-        dataset = self._transform([Normalize(torch.Tensor(self.mean), torch.Tensor(self.std))], data, targets)
+        data = (data - self.mean) / self.std
+        data = np.nan_to_num(data)
+        dataset = self._transform([], data, targets)
 
         if batch_size is None:
             batch_size = Constant.MAX_BATCH_SIZE
@@ -280,7 +281,6 @@ class DataTransformerMlp(DataTransformer):
         return self.transform_train(data, targets=target, batch_size=batch_size)
 
     def _transform(self, compose_list, data, targets):
-        data = data / self.max_val
         args = [0, len(data.shape) - 1] + list(range(1, len(data.shape) - 1))
         data = torch.Tensor(data.transpose(*args))
         data_transforms = Compose(compose_list)

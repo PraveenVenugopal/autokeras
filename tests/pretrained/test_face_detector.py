@@ -1,14 +1,14 @@
-from autokeras.pretrained import FaceDetectionPretrained
+from autokeras.pretrained.face_detector import FaceDetector
 import os
 import urllib.request
 
 
-def test_face_detection():
+def test_face_detector():
     img_file, out_file = 'test.jpg', 'output.jpg'
     urllib.request.urlretrieve('https://raw.githubusercontent.com/kuaikuaikim/DFace/master/test.jpg', img_file)
     if os.path.exists(out_file):
         os.remove(out_file)
-    face_detection = FaceDetectionPretrained()
+    face_detection = FaceDetector()
     bboxs1, landmarks1 = face_detection.predict(img_file, out_file)
     assert os.path.exists(out_file)
     bboxs2, landmarks2 = face_detection.predict(img_file)

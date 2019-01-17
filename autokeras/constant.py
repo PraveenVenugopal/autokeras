@@ -26,6 +26,14 @@ class Constant:
     DEFAULT_LENGTH_SEARCH = [50,75,100]
     DEFAULT_WIDTH_SEARCH = [64,128,256]
 
+    # Grid Dimensions
+    LENGTH_DIM = 0
+    WIDTH_DIM = 1
+
+    # Default Search Space
+    DEFAULT_LENGTH_SEARCH = [50, 75, 100]
+    DEFAULT_WIDTH_SEARCH = [64, 128, 256]
+
     # Model Defaults
 
     DENSE_DROPOUT_RATE = 0.5
@@ -63,18 +71,29 @@ class Constant:
     PRE_TRAIN_FILE_LINK = "http://nlp.stanford.edu/data/glove.6B.zip"
     PRE_TRAIN_FILE_NAME = "glove.6B.100d.txt"
 
+    PRE_TRAIN_DETECTION_FILE_LINK = "https://s3.amazonaws.com/amdegroot-models/ssd300_mAP_77.43_v2.pth"
+
+    PRE_TRAIN_VOICE_GENERATOR_MODEL_GOOGLE_DRIVE_ID = "1E-B92LZz4dgg8DU81D6pyhOzM9yvvBTj"
+    PRE_TRAIN_VOICE_GENERATOR_MODEL_NAME = "20180505_deepvoice3_checkpoint_step000640000.pth"
+    PRE_TRAIN_VOICE_GENERATOR_SAVE_FILE_DEFAULT_NAME = "test.wav"
+
     # constants for pretrained model of face detection
-    FACE_DETECTION_PRETRAINED = {
-        'PRETRAINED_MODEL_LINKS': [
+    FACE_DETECTOR = {
+        'MODEL_LINKS': [
             'https://raw.githubusercontent.com/kuaikuaikim/DFace/master/model_store/pnet_epoch.pt',
             'https://raw.githubusercontent.com/kuaikuaikim/DFace/master/model_store/rnet_epoch.pt',
             'https://raw.githubusercontent.com/kuaikuaikim/DFace/master/model_store/onet_epoch.pt'
         ],
-        'FILE_PATHS': [
+        'MODEL_NAMES': [
             'pnet.pt',
             'rnet.pt',
             'onet.pt'
         ]
+    }
+
+    OBJECT_DETECTOR = {
+        'MODEL_LINK': 'https://s3.amazonaws.com/amdegroot-models/ssd300_mAP_77.43_v2.pth',
+        'MODEL_NAME': 'object_detection_pretrained.pth'
     }
 
     # Image Resize
