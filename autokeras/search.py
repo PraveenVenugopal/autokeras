@@ -222,6 +222,8 @@ class Searcher:
 
         except (TimeoutError, queue.Empty) as e:
             raise TimeoutError from e
+        except Exception as exp:
+            logging.warning("Exception faced at mp_search : {0}".format(str(exp)))
         finally:
             # terminate and join the subprocess to prevent any resource leak
             p.terminate()
@@ -242,6 +244,8 @@ class Searcher:
 
         except TimeoutError as e:
             raise TimeoutError from e
+        except Exception as exp:
+            logging.warning("Exception faced at sp_search : {0}".format(str(exp)))
 
     def update(self, other_info, graph, metric_value, model_id):
         """ Update the controller with evaluation result of a neural architecture.
@@ -319,3 +323,7 @@ def train(q, graph, train_data, test_data, trainer_args, metric, loss, verbose, 
         if q:
             q.put((None, None, None))
         return None, None, None
+    except Exception as exp:
+        logging.warning("Exception occurred at train() : {0}".format(str(exp)))
+        if verbose:
+            print("Exception occurred at train() : {0}".format(str(exp)))
